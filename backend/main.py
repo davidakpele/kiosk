@@ -1,5 +1,7 @@
+# api/routes.py
 from api import routes
 from api import websockets 
+from api.face_auth_routes import router as face_auth_router
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -22,6 +24,8 @@ app.add_middleware(
 # Include routes directly
 app.include_router(routes.router)
 websockets.register_websocket_handlers(app)
+app.include_router(face_auth_router) 
+
 # Serve static files (HTML, CSS, JS) - ADD THIS BACK
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
 

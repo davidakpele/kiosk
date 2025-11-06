@@ -1,3 +1,5 @@
+# services/diagnosis_service.
+
 import numpy as np
 from collections import deque
 import time
@@ -42,14 +44,12 @@ class RealTimeMedicalDiagnosis:
         """Get AI medical advice using GPU acceleration"""
         current_time = time.time()
         
-        # Only call AI every 10 seconds to avoid spamming
         if current_time - self.last_ai_call_time < 10 and self.last_ai_advice != "AI medical assessment will appear here...":
             return self.last_ai_advice
             
         if self.ai_processing:
             return self.last_ai_advice
-            
-        # Check if vital signs have changed significantly
+        
         current_hash = self._get_vital_signs_hash(vital_signs)
         if current_hash == self.last_vital_hash and self.last_ai_advice != "AI medical assessment will appear here...":
             return self.last_ai_advice
@@ -59,7 +59,6 @@ class RealTimeMedicalDiagnosis:
         self.last_ai_call_time = current_time
         
         try:
-            # Create a prompt that encourages varied responses
             prompt = f"""
             Patient presents with the following real-time vital signs:
             - Heart Rate: {vital_signs['heart_rate']} BPM
@@ -72,8 +71,7 @@ class RealTimeMedicalDiagnosis:
             Focus on immediate, practical advice. Be concise (2-3 sentences max).
             Avoid repeating previous recommendations if possible.
             """
-            
-            # Run Ollama in a separate thread with GPU acceleration
+
             loop = asyncio.get_event_loop()
             advice = await loop.run_in_executor(
                 self.executor, 
@@ -93,7 +91,6 @@ class RealTimeMedicalDiagnosis:
     def _call_ollama_with_gpu(self, prompt: str) -> str:
         """Call Ollama with GPU acceleration"""
         try:
-            # Test if Ollama is running and the model is available
             test_result = subprocess.run([
                 'ollama', 'list'
             ], capture_output=True, text=True, timeout=10)
@@ -101,28 +98,25 @@ class RealTimeMedicalDiagnosis:
             if test_result.returncode != 0:
                 return "AI service is not available. Please ensure Ollama is running."
             
-            # Check if the model exists
             if 'gooddoctor' not in test_result.stdout:
                 return "Medical AI model not found. Please pull the model first."
-            
-            # Run with GPU acceleration
+        
             result = subprocess.run([
                 'ollama', 'run', 
-                '--gpu',  # Force GPU usage
+                '--gpu',  
                 'ALIENTELLIGENCE/gooddoctor:latest', 
                 prompt
             ], 
             capture_output=True, 
             text=True, 
-            timeout=25,  # Reduced timeout since GPU should be faster
+            timeout=25,
             encoding='utf-8',
             errors='ignore',
-            env=os.environ  # Pass the GPU environment variables
+            env=os.environ  
             )
 
             if result.returncode == 0 and result.stdout.strip():
                 response = result.stdout.strip()
-                # Clean up the response
                 if ">>>" in response:
                     response = response.split(">>>")[-1].strip()
                 if response.startswith('"') and response.endswith('"'):
@@ -130,7 +124,6 @@ class RealTimeMedicalDiagnosis:
                 
                 return response if response else "AI is processing your health data..."
             else:
-                # If GPU fails, try CPU as fallback
                 return self._call_ollama_cpu_fallback(prompt)
                 
         except subprocess.TimeoutExpired:
@@ -176,8 +169,6 @@ class RealTimeMedicalDiagnosis:
         """Create a hash of vital signs to detect significant changes"""
         key_data = f"{vital_signs['heart_rate']:.1f}-{vital_signs['stress_level']:.2f}-{vital_signs['health_status']}"
         return hashlib.md5(key_data.encode()).hexdigest()
-    
-    # ... rest of your existing methods remain the same ...
     def extract_recommendations_from_advice(self, advice: str) -> List[Dict]:
         """Extract structured recommendations from AI advice"""
         if not advice or any(phrase in advice.lower() for phrase in ['analyzing', 'unavailable', 'error', 'processing']):
@@ -185,7 +176,6 @@ class RealTimeMedicalDiagnosis:
             
         recommendations = []
         
-        # More sophisticated pattern matching
         patterns = [
             (r'(?:recommend|suggest|advise|encourage)\s+(.*?)(?=\.|$)', 'general'),
             (r'(?:should|could|might)\s+(.*?)(?=\.|$)', 'suggestion'),
@@ -210,7 +200,6 @@ class RealTimeMedicalDiagnosis:
                     }
                     recommendations.append(recommendation)
         
-        # If no structured recommendations found, use key sentences
         if not recommendations and len(advice) > 50:
             sentences = [s.strip() for s in re.split(r'[.!?]+', advice) if len(s.strip()) > 30]
             for sentence in sentences[:2]:  # Take max 2 sentences
@@ -270,8 +259,7 @@ class RealTimeMedicalDiagnosis:
         alerts = []
         health_status = "Normal"
         fatigue_risk = "Low"
-        
-        # Heart rate analysis
+    
         if bpm > 100:
             alerts.append("Elevated heart rate")
             health_status = "Warning"
@@ -281,7 +269,6 @@ class RealTimeMedicalDiagnosis:
         else:
             alerts.append("Normal heart rate")
         
-        # Stress analysis
         avg_stress = np.mean(list(self.stress_history)) if self.stress_history else 0
         if avg_stress > 0.7:
             alerts.append("High stress detected")
@@ -292,7 +279,6 @@ class RealTimeMedicalDiagnosis:
         else:
             alerts.append("Low stress")
         
-        # Fatigue detection
         if len(self.bpm_history) >= 8:
             recent_avg = np.mean(list(self.bpm_history)[-4:])
             earlier_avg = np.mean(list(self.bpm_history)[-8:-4])
@@ -326,10 +312,7 @@ class RealTimeMedicalDiagnosis:
         """Update AI advice and extract recommendations"""
         if new_advice and new_advice != self.last_ai_advice:
             self.last_ai_advice = new_advice
-            
-            # Extract and store new recommendations
             new_recommendations = self.extract_recommendations_from_advice(new_advice)
             for rec in new_recommendations:
-                # Check for duplicates before adding
                 if not any(existing_rec['id'] == rec['id'] for existing_rec in self.recommendation_history):
                     self.recommendation_history.append(rec)

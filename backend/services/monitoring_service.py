@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 import asyncio
 
 from processors.camera import FastCamera
-from processors.face_processor import FastFaceProcessor
+from processors.face_processor import FaceRecognitionService
 from processors.rppg_processor import FastRPPGProcessor
 from services.diagnosis_service import RealTimeMedicalDiagnosis
 from services.database_service import DatabaseService
@@ -20,7 +20,7 @@ class RealTimeMonitoringSession:
         self.database_service = DatabaseService(db)
         
         self.camera = FastCamera()
-        self.face_processor = FastFaceProcessor()
+        self.face_processor = FaceRecognitionService()
         self.rppg_processor = FastRPPGProcessor()
         self.diagnosis = RealTimeMedicalDiagnosis()
         
@@ -54,26 +54,20 @@ class RealTimeMonitoringSession:
         if frame is None:
             return None
         
-        # Process face detection EVERY FRAME (no blocking)
         face_results = self.face_processor.process_frame(frame)
         
         diagnosis_result = self.last_diagnosis
         
-        # CONTINUOUS processing - no frame skipping
         if face_results['face_detected']:
-            # Extract signal EVERY FRAME for continuous data
             signal_value = self.rppg_processor.extract_signal(frame, face_results['landmarks'])
             if signal_value > 0:
                 self.rppg_processor.add_signal(signal_value)
-                
-                # Compute heart rate MORE FREQUENTLY (every 15 frames = 0.5 seconds)
+
                 if self.frame_count % 15 == 0 and len(self.rppg_processor.signal_buffer) >= 30:
                     bpm, confidence = self.rppg_processor.compute_heart_rate()
                     if bpm > 0:
                         diagnosis_result = self.diagnosis.analyze_vitals(bpm, confidence)
                         self.last_diagnosis = diagnosis_result
-                        
-                        # Save to database (non-blocking)
                         if diagnosis_result and diagnosis_result['heart_rate'] > 0:
                             self.database_service.save_physiological_data(
                                 session_id=self.session_id,
@@ -85,8 +79,7 @@ class RealTimeMonitoringSession:
                             )
         
         self.frame_count += 1
-        
-        # Update AI advice periodically without blocking (every 10 seconds)
+    
         current_time = time.time()
         if (current_time - self.last_ai_update_time > 10 and 
             diagnosis_result and 
@@ -94,18 +87,14 @@ class RealTimeMonitoringSession:
             
             self.last_ai_update_time = current_time
             self.ai_update_counter += 1
-            
-            # Start async AI update but don't wait for it
             asyncio.create_task(self._update_ai_advice_async(diagnosis_result))
         
-        # Fast visualization
         if face_results['face_detected'] and face_results['landmarks']:
             frame = self.fast_draw_landmarks(frame, face_results['landmarks'])
         
         if diagnosis_result:
             frame = self.fast_add_overlay(frame, diagnosis_result)
         
-        # Fast encoding with lower quality for speed
         _, buffer = cv2.imencode('.jpg', cv2.cvtColor(frame, cv2.COLOR_RGB2BGR), 
                                [cv2.IMWRITE_JPEG_QUALITY, 85])
         frame_base64 = base64.b64encode(buffer).decode('utf-8')
@@ -125,14 +114,9 @@ class RealTimeMonitoringSession:
     async def _update_ai_advice_async(self, diagnosis_result: Dict):
         """Update AI advice asynchronously without blocking the main loop"""
         try:
-            print(f"Updating AI advice for frame {self.frame_count}")  # Debug log
             new_advice = await self.diagnosis.get_ai_medical_advice_async(diagnosis_result)
-            print(f"Received AI advice: {new_advice}")  # Debug log
-            
-            # Update the diagnosis service with new advice
+
             self.diagnosis.update_ai_advice(new_advice)
-            
-            # Also update the last diagnosis with new AI advice
             if self.last_diagnosis:
                 self.last_diagnosis['ai_advice'] = new_advice
                 
@@ -144,8 +128,7 @@ class RealTimeMonitoringSession:
         h, w = frame.shape[:2]
         for landmark in landmarks.landmark:
             x, y = int(landmark.x * w), int(landmark.y * h)
-            # Change from (255, 0, 0) [BLUE] to (0, 255, 0) [GREEN] in BGR format
-            cv2.circle(frame, (x, y), 2, (0, 255, 0), -1)  # Green color, slightly larger dots
+            cv2.circle(frame, (x, y), 2, (0, 255, 0), -1) 
         return frame
     
     def fast_add_overlay(self, frame, diagnosis):

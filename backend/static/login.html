@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        
+        .video-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto 20px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        #video {
+            width: 100%;
+            height: 400px;
+            background: #000;
+            border-radius: 10px;
+        }
+        
+        #overlayCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .face-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-weight: bold;
+            z-index: 10;
+        }
+        
+        .face-detected {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .no-face {
+            background: #f44336;
+            color: white;
+        }
+        
+        .message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .success {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .error {
+            background: #f44336;
+            color: white;
+        }
+        
+        .info {
+            background: #2196F3;
+            color: white;
+        }
+        
+        .register-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .register-link a {
+            color: #4CAF50;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        
+        .register-link a:hover {
+            text-decoration: underline;
+        }
+
+        /* Green mask animation */
+        @keyframes pulse {
+            0% { opacity: 0.7; }
+            50% { opacity: 1; }
+            100% { opacity: 0.7; }
+        }
+
+        .scanning {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Face Login</h1>
+        
+        <div class="video-container">
+            <video id="video" autoplay playsinline></video>
+            <canvas id="overlayCanvas"></canvas>
+            <div id="faceIndicator" class="face-indicator no-face">No Face Detected</div>
+        </div>
+        
+        <div id="message" class="message info">
+            Position your face in front of the camera to login automatically
+        </div>
+        
+        <div class="register-link">
+            Not registered? <a href="register.html">Register here</a>
+        </div>
+    </div>
+
+    <script>
+        class FaceLogin {
+            constructor() {
+                this.video = document.getElementById('video');
+                this.overlayCanvas = document.getElementById('overlayCanvas');
+                this.overlayCtx = this.overlayCanvas.getContext('2d');
+                this.faceIndicator = document.getElementById('faceIndicator');
+                this.messageDiv = document.getElementById('message');
+                this.websocket = null;
+                this.stream = null;
+                this.isScanning = false;
+                this.faceDetected = false;
+                
+                this.init();
+            }
+            
+            async init() {
+                await this.startCamera();
+                await this.connectWebSocket();
+                this.startOverlayAnimation();
+            }
+
+            async startCamera() {
+                try {
+                    this.stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { width: 640, height: 480 } 
+                    });
+                    this.video.srcObject = this.stream;
+                    
+                    await new Promise((resolve) => {
+                        this.video.onloadeddata = resolve;
+                    });
+                    
+                    this.overlayCanvas.width = this.video.videoWidth;
+                    this.overlayCanvas.height = this.video.videoHeight;
+                    
+                } catch (error) {
+                    this.showMessage('Camera error: ' + error.message, 'error');
+                }
+            }
+            
+            startOverlayAnimation() {
+                const drawOverlay = () => {
+                    this.overlayCtx.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
+                    
+                    if (this.isScanning && this.faceDetected) {
+                        // Draw green scanning mask
+                        this.overlayCtx.fillStyle = 'rgba(76, 175, 80, 0.3)';
+                        this.overlayCtx.fillRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
+                        
+                        // Draw face outline
+                        const centerX = this.overlayCanvas.width / 2;
+                        const centerY = this.overlayCanvas.height / 2;
+                        const faceSize = Math.min(this.overlayCanvas.width, this.overlayCanvas.height) * 0.4;
+                        
+                        // Draw green face circle
+                        this.overlayCtx.strokeStyle = '#4CAF50';
+                        this.overlayCtx.lineWidth = 3;
+                        this.overlayCtx.beginPath();
+                        this.overlayCtx.arc(centerX, centerY, faceSize, 0, 2 * Math.PI);
+                        this.overlayCtx.stroke();
+                        
+                        // Draw scanning lines
+                        this.overlayCtx.strokeStyle = '#4CAF50';
+                        this.overlayCtx.lineWidth = 2;
+                        
+                        // Horizontal scanning line
+                        const scanY = centerY + Math.sin(Date.now() / 500) * (faceSize * 0.8);
+                        this.overlayCtx.beginPath();
+                        this.overlayCtx.moveTo(centerX - faceSize, scanY);
+                        this.overlayCtx.lineTo(centerX + faceSize, scanY);
+                        this.overlayCtx.stroke();
+                        
+                        // Vertical scanning line
+                        const scanX = centerX + Math.cos(Date.now() / 500) * (faceSize * 0.8);
+                        this.overlayCtx.beginPath();
+                        this.overlayCtx.moveTo(scanX, centerY - faceSize);
+                        this.overlayCtx.lineTo(scanX, centerY + faceSize);
+                        this.overlayCtx.stroke();
+                        
+                        // Add "Scanning..." text
+                        this.overlayCtx.fillStyle = '#4CAF50';
+                        this.overlayCtx.font = '20px Arial';
+                        this.overlayCtx.textAlign = 'center';
+                        this.overlayCtx.fillText('Scanning Face...', centerX, centerY + faceSize + 30);
+                    }
+                    
+                    requestAnimationFrame(drawOverlay);
+                };
+                
+                drawOverlay();
+            }
+            
+            async connectWebSocket() {
+                try {
+                    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                    const wsUrl = `${protocol}//${window.location.host}/api/face-auth/ws/face-auth`;
+                    
+                    this.websocket = new WebSocket(wsUrl);
+                    
+                    this.websocket.onopen = () => {
+                        this.startSendingFrames();
+                    };
+                    
+                    this.websocket.onmessage = (event) => {
+                        const data = JSON.parse(event.data);
+                        this.handleMessage(data);
+                    };
+                    
+                } catch (error) {
+                    console.error('WebSocket connection failed:', error);
+                }
+            }
+            
+            startSendingFrames() {
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                
+                const sendFrame = () => {
+                    if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
+                        if (this.video.videoWidth === 0) return;
+                        
+                        canvas.width = this.video.videoWidth;
+                        canvas.height = this.video.videoHeight;
+                        context.drawImage(this.video, 0, 0);
+                        
+                        const frameData = canvas.toDataURL('image/jpeg', 0.8);
+                        
+                        this.websocket.send(JSON.stringify({
+                            type: 'frame',
+                            data: frameData,
+                            timestamp: Date.now()
+                        }));
+                        
+                        this.isScanning = true;
+                    }
+                    
+                    setTimeout(() => requestAnimationFrame(sendFrame), 500);
+                };
+                
+                sendFrame();
+            }
+            
+            handleMessage(data) {
+                if (data.type === 'face_detection') {
+                    const hasFace = data.face_detected;
+                    this.faceDetected = hasFace;
+                    
+                    this.faceIndicator.textContent = hasFace ? '✅ Face Detected' : '❌ No Face';
+                    this.faceIndicator.className = `face-indicator ${hasFace ? 'face-detected' : 'no-face'}`;
+                    
+                    if (data.authentication) {
+                        if (data.authentication.success) {
+                            this.showMessage(`✅ Welcome ${data.authentication.username}!`, 'success');
+                            this.isScanning = false;
+                        
+                        } else if (hasFace) {
+                            this.showMessage('❌ User not recognized. Please register first.', 'error');
+                            this.isScanning = false;
+                        } else {
+                            this.isScanning = false;
+                        }
+                    }
+                }
+            }
+            
+            showMessage(message, type) {
+                this.messageDiv.textContent = message;
+                this.messageDiv.className = `message ${type}`;
+                this.messageDiv.style.display = 'block';
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            new FaceLogin();
+        });
+    </script>
+</body>
+</html>
