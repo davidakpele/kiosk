@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Medical Kiosk - LIVE DIAGNOSIS</title>
+    <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+    <!-- Top Navbar -->
+    <div class="top-navbar">
+        <div class="nav-left">
+            <button class="menu-toggle" id="menuToggle">☰</button>
+            <div class="logo">
+                <div class="logo-icon">MK</div>
+                <div class="logo-text">MediKiosk Pro</div>
+            </div>
+        </div>
+        
+        <div class="nav-right">
+            <div class="user-menu">
+                <div class="user-avatar">DR</div>
+                <span>Dr. Smith</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- App Container -->
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="nav-section">
+                <div class="nav-title">Main</div>
+                <a href="#" class="nav-item active">
+                    <i>📊</i> Dashboard
+                </a>
+                <a href="#" class="nav-item">
+                    <i>👥</i> Patients
+                </a>
+                <a href="#" class="nav-item">
+                    <i>📋</i> Appointments
+                </a>
+                <a href="#" class="nav-item">
+                    <i>💊</i> Prescriptions
+                </a>
+            </div>
+            
+            <div class="nav-section">
+                <div class="nav-title">Analysis</div>
+                <a href="#" class="nav-item">
+                    <i>❤️</i> Vital Signs
+                </a>
+                <a href="#" class="nav-item">
+                    <i>🩺</i> Diagnostics
+                </a>
+                <a href="#" class="nav-item">
+                    <i>🤖</i> AI Assessment
+                </a>
+                <a href="#" class="nav-item">
+                    <i>📈</i> Health Trends
+                </a>
+            </div>
+            
+            <div class="nav-section">
+                <div class="nav-title">Settings</div>
+                <a href="#" class="nav-item">
+                    <i>⚙️</i> System Settings
+                </a>
+                <a href="#" class="nav-item">
+                    <i>👤</i> Profile
+                </a>
+                <a href="#" class="nav-item">
+                    <i>🚪</i> Logout
+                </a>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content" id="mainContent">
+            <div class="page-header">
+                <h1>Patient Diagnosis Dashboard</h1>
+            </div>
+            
+            <!-- Stats Overview -->
+            <div class="dashboard-grid">
+                <div class="card stat-card">
+                    <div class="card-title">Today's Patients</div>
+                    <div class="stat-value">12</div>
+                    <div class="stat-label">Scheduled appointments</div>
+                </div>
+                
+                <div class="card stat-card">
+                    <div class="card-title">Waiting</div>
+                    <div class="stat-value">3</div>
+                    <div class="stat-label">Patients in queue</div>
+                </div>
+                
+                <div class="card stat-card">
+                    <div class="card-title">Avg. Heart Rate</div>
+                    <div class="stat-value">72</div>
+                    <div class="stat-label">BPM across patients</div>
+                </div>
+                
+                <div class="card stat-card">
+                    <div class="card-title">System Status</div>
+                    <div class="stat-value" style="color: var(--success);">Online</div>
+                    <div class="stat-label">All systems operational</div>
+                </div>
+            </div>
+            
+            <!-- AI Medical Assessment -->
+            <div class="ai-assessment">
+                <div class="ai-header">
+                    <div class="ai-icon">🤖</div>
+                    <div>
+                        <div style="font-weight: 600; font-size: 1.1rem;">AI Medical Assessment</div>
+                        <div style="font-size: 0.85rem; opacity: 0.9;">Powered by The Good Doctor</div>
+                    </div>
+                </div>
+                <div class="ai-content" id="aiAdvice">
+                    <div class="ai-loading">
+                        <span>Start monitoring to receive AI medical assessment</span>
+                        <div class="loading-dots">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Main Dashboard -->
+            <div class="dashboard-grid" style="grid-template-columns: 2fr 1fr;">
+                <!-- Live Monitoring Section -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Live Patient Monitoring</div>
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            <button class="btn btn-primary" onclick="startMonitoring()">
+                                ▶ Start Diagnosis
+                            </button>
+                            <button class="btn btn-outline" onclick="stopMonitoring()">
+                                ⏹ Stop
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="monitoring-container">
+                        <div class="video-container">
+                            <img id="videoFeed" src="" alt="Live Camera Feed">
+                            <div class="video-overlay">
+                                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                                    <div>
+                                        <div id="faceStatus" style="background: var(--danger); color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem;">
+                                            No Face Detected
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; gap: 0.5rem;">
+                                        <button class="btn btn-outline" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3);">
+                                            📸 Capture
+                                        </button>
+                                        <button class="btn btn-outline" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3);">
+                                            📹 Record
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div class="card-title" style="margin-bottom: 1rem;">Vital Signs</div>
+                            <div class="vitals-grid">
+                                <div class="vital-card">
+                                    <div class="vital-label">Heart Rate</div>
+                                    <div class="vital-value" id="heartRate">--</div>
+                                    <div class="vital-label">BPM</div>
+                                </div>
+                                
+                                <div class="vital-card">
+                                    <div class="vital-label">Stress Level</div>
+                                    <div class="vital-value" id="stressLevel">--</div>
+                                    <div class="vital-label">0-1 Scale</div>
+                                </div>
+                                
+                                <div class="vital-card">
+                                    <div class="vital-label">Fatigue Risk</div>
+                                    <div class="vital-value" id="fatigueRisk">--</div>
+                                    <div class="vital-label">Assessment</div>
+                                </div>
+                                
+                                <div class="vital-card">
+                                    <div class="vital-label">Confidence</div>
+                                    <div class="vital-value" id="confidence">--</div>
+                                    <div class="vital-label">Score</div>
+                                </div>
+                            </div>
+                            
+                            <div style="margin-top: 1rem;">
+                                <div class="card-title">Health Status</div>
+                                <div id="healthStatus" style="font-size: 1.25rem; font-weight: 600; color: var(--secondary); margin: 0.5rem 0;">
+                                    No data
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Patient Queue -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Patient Queue</div>
+                        <button class="btn btn-outline" onclick="openNewPatientModal()">
+                            + Add Patient
+                        </button>
+                    </div>
+                    
+                    <div class="patient-list">
+                        <div class="patient-item">
+                            <div class="patient-avatar">JS</div>
+                            <div class="patient-info">
+                                <h4>John Smith</h4>
+                                <p>ID: P-12345 | 45 years</p>
+                            </div>
+                            <div class="patient-status status-in-progress">
+                                In Progress
+                            </div>
+                        </div>
+                        
+                        <div class="patient-item">
+                            <div class="patient-avatar">MJ</div>
+                            <div class="patient-info">
+                                <h4>Maria Johnson</h4>
+                                <p>ID: P-12346 | 32 years</p>
+                            </div>
+                            <div class="patient-status status-waiting">
+                                Waiting
+                            </div>
+                        </div>
+                        
+                        <div class="patient-item">
+                            <div class="patient-avatar">RB</div>
+                            <div class="patient-info">
+                                <h4>Robert Brown</h4>
+                                <p>ID: P-12347 | 58 years</p>
+                            </div>
+                            <div class="patient-status status-waiting">
+                                Waiting
+                            </div>
+                        </div>
+                        
+                        <div class="patient-item">
+                            <div class="patient-avatar">SW</div>
+                            <div class="patient-info">
+                                <h4>Sarah Wilson</h4>
+                                <p>ID: P-12348 | 29 years</p>
+                            </div>
+                            <div class="patient-status status-completed">
+                                Completed
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Alerts & Recommendations -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Alerts & Recommendations</div>
+                </div>
+                
+                <div id="alertsContainer">
+                    <div class="alert alert-info">
+                        <div>🤖</div>
+                        <div>AI Medical Assessment ready. Start monitoring to receive personalized health recommendations.</div>
+                    </div>
+                </div>
+
+                <!-- Recommendation History Panel -->
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">AI Recommendation History</div>
+        <div style="display: flex; gap: 0.5rem;">
+            <button class="btn btn-outline" onclick="clearRecommendations()">
+                🗑️ Clear
+            </button>
+            <button class="btn btn-outline" onclick="toggleRecommendations()">
+                <span id="toggleIcon">▼</span> Toggle
+            </button>
+        </div>
+    </div>
+    
+    <div id="recommendationsPanel" style="max-height: 300px; overflow-y: auto;">
+        <div id="recommendationsList">
+            <div class="empty-state" style="text-align: center; padding: 2rem; color: var(--secondary);">
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">📋</div>
+                <div>AI recommendations will appear here as they are generated</div>
+            </div>
+        </div>
+    </div>
+    
+    <div style="padding: 1rem; border-top: 1px solid var(--border);">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.875rem; color: var(--secondary);">
+                <span id="recommendationCount">0</span> recommendations
+            </span>
+            <button class="btn btn-outline" onclick="exportRecommendations()" style="font-size: 0.875rem;">
+                📥 Export
+            </button>
+        </div>
+    </div>
+</div>
+                
+                <div class="card-header" style="margin-top: 1.5rem;">
+                    <div class="card-title">Diagnostic Notes</div>
+                </div>
+                
+                <div class="form-group">
+                    <textarea class="form-control" rows="4" placeholder="Enter diagnostic notes, observations, and recommendations..."></textarea>
+                </div>
+                
+                <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1rem; flex-wrap: wrap;">
+                    <button class="btn btn-outline">Save Notes</button>
+                    <button class="btn btn-primary">Generate Report</button>
+                    <button class="btn btn-primary">Prescribe Medication</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- New Patient Modal -->
+    <div class="modal" id="newPatientModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add New Patient</h3>
+                <button class="close-modal" onclick="closeNewPatientModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" class="form-control" placeholder="Enter patient name">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Date of Birth</label>
+                    <input type="date" class="form-control">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Gender</label>
+                    <select class="form-control">
+                        <option>Male</option>
+                        <option>Female</option>
+                        <option>Other</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Contact Information</label>
+                    <input type="text" class="form-control" placeholder="Phone or email">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Medical History Notes</label>
+                    <textarea class="form-control" rows="3" placeholder="Any relevant medical history..."></textarea>
+                </div>
+                
+                <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem; flex-wrap: wrap;">
+                    <button class="btn btn-outline" onclick="closeNewPatientModal()">Cancel</button>
+                    <button class="btn btn-primary">Add Patient</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="./js/script.js"></script>
+</body>
+</html>

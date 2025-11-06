@@ -6,6 +6,7 @@ load_dotenv()
 class Settings:
     APP_NAME: str = "Medical Kiosk API"
     APP_VERSION: str = "1.0.0"
+    ALLOWED_ORIGINS = ["*"]
     
     # Database - Use postgresql:// not postgres://
     DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://postgres:root@localhost:5432/med_kiosk")
