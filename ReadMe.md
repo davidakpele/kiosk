@@ -1,5 +1,3 @@
-Absolutely! With your extensive backend experience, we can build a sophisticated system. Here's a structured 6-week development plan:
-
 ## 🗓️ **6-Week Development Plan: AI Medical Kiosk**
 
 ### **Week 1: Foundation & Architecture**
